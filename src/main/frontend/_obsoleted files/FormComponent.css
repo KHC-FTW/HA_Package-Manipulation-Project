@@ -1,0 +1,176 @@
+.app {
+  display: flex;
+}
+  
+  .form-container {
+    width: 40%;
+    margin: 0 auto;
+    padding: 30px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    min-height: 800px;
+  }
+
+  .server-status{
+    width: 50%;
+    margin: 0 auto;
+    padding: 30px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+  }
+
+  .messages {
+    border: 1px solid #ccc;
+    padding: 15px;
+    min-height: 700px;
+    max-height: 700px;
+    overflow-y: auto;
+    font-size: 110%;
+    background-color: black;
+    color: white;
+  }
+  
+  .form-group {
+    margin-bottom: 13px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+  
+  .form-group label {
+    display: flex;
+    margin-bottom: 5px;
+    font-weight: bold;
+    font-size: 110%;
+    /* width: 100%; */
+  }
+  
+  input[type='text'],
+  input[type='email'],
+  input[type='tel'] {
+    width: 96%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 105%;
+  }
+  
+  /* .checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+  } */
+  
+  .checkbox-group p {
+    margin-bottom: 0px;
+    font-weight: bold;
+    width: 100%;
+  }
+  
+  /* .checkbox-group label {
+    display: flex;
+    align-items: center;
+    margin-right: 15px;
+  } */
+
+  .cluster-border{
+    display: flex;
+  }
+
+  .cluster{
+    width: 90px;
+    height: 50px;
+    /* border-style: solid; */
+    border-width: 0.5px;
+    display: flex;
+    padding-left: 5px;
+  }
+
+  .HKEC{
+    background-color: #fa98af;
+  }
+
+  .HKEC:hover{
+    background-color: #FE3263;
+  }
+
+  .HKECHosp{
+    background-color: #ffcbd7;
+  }
+
+  .KWC{
+    background-color: #b3f3b3;
+  }
+
+  .KWC:hover{
+    background-color: #00e200;
+  }
+
+  .KWCHosp{
+    background-color: #d7ffd7;
+  }
+
+  .HKWC{
+    background-color: #92b5fc;
+  }
+
+  .HKWC:hover{
+    background-color: #5a91ff;
+  }
+
+  .HKWCHosp{
+    background-color: #c6d9ff;
+  }
+
+  .NTEC{
+    background-color: #ffb596;
+  }
+
+  .NTEC:hover{
+    background-color: #DF4401;
+  }
+
+  .NTECHosp{
+    background-color: #ffdbcc;
+  }
+
+  .cluster label{
+    display: flex;
+    justify-content: left;
+    align-items: center;
+  }
+
+  .clusterHosp{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1%;
+    /* border-style: solid; */
+    border-width: 0.5px;
+    align-items: center;
+    justify-content: start;
+    width: calc(100% - 90px);
+    padding: 5px;
+  }
+  
+  button[type='submit'] {
+    padding: 13px 35px;
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 150%;
+    font-weight: bold;
+  }
+  
+  button[type='submit']:hover {
+    background-color: #45a049;
+  }
+
+  button[type='submit']:disabled{
+    background-color: grey;
+    color: lightgray;
+    cursor: not-allowed;
+  }
+
+
+

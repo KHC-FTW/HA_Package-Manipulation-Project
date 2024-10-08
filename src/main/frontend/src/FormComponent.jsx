@@ -169,7 +169,6 @@ const FormComponent = () => {
   }
 
   const handleWorkStations = (option, action) => {
-    console.log(option)
     const hospName = action.name
     if (option.length !== 0){
       option.forEach(x => {
@@ -180,12 +179,21 @@ const FormComponent = () => {
         }
       })
     }
-    setWorkStations(workStations.map(item => {
-      if(item.hospCode === hospName){
-        item.WS = option
-      }
-      return item
-    }))
+    if (option.length >= 2){
+      setWorkStations(workStations.map(item => {
+        if(item.hospCode === hospName){
+          item.WS = option.filter(item => item.value !== 'NONE')
+        }
+        return item
+      }))
+    }else{
+      setWorkStations(workStations.map(item => {
+        if(item.hospCode === hospName){
+          item.WS = option
+        }
+        return item
+      }))
+    }
   };
 
   const handleMachineGroups = (option, action) => {
@@ -199,12 +207,22 @@ const FormComponent = () => {
         }
       })
     }
-    setMachineGroups(machineGroups.map(item => {
-      if(item.hospCode === hospName){
-        item.machineGps = option
-      }
-      return item
-    }))
+    if (option.length >= 2){
+      setMachineGroups(machineGroups.map(item => {
+        if(item.hospCode === hospName){
+          item.machineGps = option.filter(item => item.value !== 'NONE')
+        }
+        return item
+      }))
+    }else{
+      setMachineGroups(machineGroups.map(item => {
+        if(item.hospCode === hospName){
+          item.machineGps = option
+        }
+        return item
+      }))
+    }
+    
   };
 
   useEffect(()=>{

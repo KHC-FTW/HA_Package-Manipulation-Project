@@ -32,7 +32,7 @@ public class BatFileService {
                 // Read the file line by line
                 while ((line = reader.readLine()) != null) {
                     String lineLC = line.toLowerCase();
-                    if ((lineLC.contains("set_fd") || lineLC.contains("netlogon") || lineLC.contains("filedist")) && !lineLC.contains("rem")){
+                    if ((lineLC.contains("set_fd") || lineLC.contains("netlogon") || (lineLC.contains("filedist") && !lineLC.contains("cost="))) && !lineLC.contains("rem")){
                         String remAdded = "rem " + line;
                         content.append(remAdded);
                     }else content.append(line);

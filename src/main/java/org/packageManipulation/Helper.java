@@ -177,8 +177,8 @@ public class Helper {
             tempUnzipLocation = unzipPackageToTempFolder(packageMetadata, configParameters);
             for (String hospCode: packageMetadata.getFinalHospDest()){
                 try{
-                    backupIniFile(hospCode, configParameters);
-                    updateTasklistIni(hospCode, packageMetadata, configParameters);
+                    backupIniFile(hospCode, configParameters, true);
+                    updateTasklistIni(hospCode, packageMetadata, configParameters, true);
                     updatePackageIni(hospCode, packageMetadata, configParameters);
                     copyPackageToDest(hospCode, tempUnzipLocation.get("srcPackageContent"), packageMetadata, configParameters);
                     BatFileService.updateReconfig_w(hospCode, packageMetadata, configParameters);
@@ -198,6 +198,25 @@ public class Helper {
                 messagingTemplate.convertAndSend(notifyClientPath, "All backend operations have finished running.");
             }
         }
+    }
+
+    public static void startOperationNoZip(PackageMetadata packageMetadata, ConfigParameters configParameters){
+        // 2 types of loop action:
+        // 1) backup tasklist.ini
+        // 2) update tasklist.ini
+
+        SimpMessagingTemplate messagingTemplate = packageMetadata.getMessagingTemplate();
+        String notifyClientPath = packageMetadata.getNotifyClientPath();
+        for (String hospCode: packageMetadata.getFinalHospDest()){
+            try{
+                backupIniFile(hospCode, configParameters, false);
+                updateTasklistIni(hospCode, packageMetadata, configParameters, false);
+                messagingTemplate.convertAndSend(notifyClientPath, hospCode + ": All operations completed successfully!");
+            }catch (IOException e){
+                messagingTemplate.convertAndSend(notifyClientPath, e.getMessage() + "\n!!! " + hospCode + " !!!");
+            }
+        }
+        messagingTemplate.convertAndSend(notifyClientPath, "All backend operations have finished running.");
     }
 
     private static Map<String, File> unzipPackageToTempFolder(PackageMetadata packageMetadata, ConfigParameters configParameters) throws IOException{
@@ -289,7 +308,7 @@ public class Helper {
         return destFile;
     }
 
-    private static void backupIniFile(String hospCode, ConfigParameters configParameters) throws IOException{
+    private static void backupIniFile(String hospCode, ConfigParameters configParameters, boolean backupPackageIni) throws IOException{
         String iniDirectory = configParameters.getHospPackageDirectories().get(hospCode) + configParameters.getIniFolderRelPath();
         List<String> filesToCopy = new ArrayList<>(Arrays.asList("tasklist.ini", "package.ini"));
         String iniBackupPath = iniDirectory + "\\_AutoBackup";
@@ -298,6 +317,7 @@ public class Helper {
         Date date = new Date();
         String formattedDate = new SimpleDateFormat("yyyyMMdd").format(date);
         for (String iniFile: filesToCopy){
+            if(iniFile.equals("package.ini") && !backupPackageIni) continue;
             try{
                 int duplicateCnt = 1;
                 Path srcPath = Paths.get(iniDirectory + "\\" + iniFile);
@@ -328,7 +348,7 @@ public class Helper {
         }
     }
 
-    private static void updateTasklistIni(String hospCode, PackageMetadata packageMetadata, ConfigParameters configParameters) throws IOException{
+    private static void updateTasklistIni(String hospCode, PackageMetadata packageMetadata, ConfigParameters configParameters, boolean hasUploadedPackage) throws IOException{
         SimpMessagingTemplate messagingTemplate = packageMetadata.getMessagingTemplate();
         String notifyClientPath = packageMetadata.getNotifyClientPath();
         String packDescAction = packageMetadata.getPackDescAction();
@@ -346,6 +366,10 @@ public class Helper {
             String newPackageDesc = packageMetadata.getPackDesc() + "   (" + formattedDate + ", " + packageMetadata.getPackUpdateStaff() + ")";
 
             if (!packageToCheck.exists()) {
+                if (!hasUploadedPackage) {
+                    String tasklistIniNotUpdatedMsg = "WARNING: "+ hospCode + " does not have \"" + packageMetadata.getPackageName() + "\" but no new zip package is uploaded. The tasklist.ini will not be updated.";
+                    throw new IOException(tasklistIniNotUpdatedMsg);
+                }
                 // required number for the new package
                 List<String> allPackageCodes = new ArrayList<>(iniToUpdate.get("Tasks").keySet());
                 Map<String, Integer> packageResults = getEndingPackAndGenNewPackNum(allPackageCodes, endingPackCutOffVal);
@@ -424,7 +448,8 @@ public class Helper {
                 }
             }
         }catch(IOException | NumberFormatException e){
-            throw new IOException("CRITICAL: Failed to update tasklist.ini.\n" + e);
+//            throw new IOException("CRITICAL: Failed to update tasklist.ini.\n" + e);
+            throw e;
         }
     }
     private static Map<String, Integer> getEndingPackAndGenNewPackNum(List<String> allPackages, int endingPackCutOffVal){
@@ -878,13 +903,21 @@ public class Helper {
     }
 
     private static boolean validWS(String WSName){
-        int digitCnt = 0;
-        for (char c: WSName.toCharArray()){
-            if (c == '_') return false;
-            if (Character.isLowerCase(c)) return false;
-            if (Character.isDigit(c)) digitCnt++;
-        }
-        if(digitCnt == WSName.length()) return false;
+        if (WSName.length() > 5 || !MatchString.isLetterAndNumOnly(WSName)) return false;
+        return true;
+    }
+
+    @Deprecated
+    private static boolean validWS_Old(String WSName){
+        if (WSName.length() > 5 || !WSName.matches("[a-zA-Z0-9]*")) return false;
+        // || WSName.matches("[0-9]*")
+//        int digitCnt = 0;
+//        for (char c: WSName.toCharArray()){
+//            if (c == '_') return false;
+//            if (Character.isLowerCase(c)) return false;
+//            if (Character.isDigit(c)) digitCnt++;
+//        }
+//        if(digitCnt == WSName.length()) return false;
         return true;
     }
 
@@ -914,10 +947,10 @@ public class Helper {
             }
         }
         if (!successWS.isEmpty()){
-            messagingTemplate.convertAndSend(notifyClientPath, "Completed workstation(s): " + successWS);
+            messagingTemplate.convertAndSend(notifyClientPath, "Completed workstation(s): " + successWS + " (Total: " + successWS.size() + ")");
         }
         if (!failWS.isEmpty()){
-            messagingTemplate.convertAndSend(notifyClientPath, "CRITICAL: Failed workstation(s): " + failWS);
+            messagingTemplate.convertAndSend(notifyClientPath, "CRITICAL: Failed workstation(s): " + failWS + " (Total: " + failWS.size() + ")");
         }
     }
 
@@ -952,16 +985,17 @@ public class Helper {
             }
         }
         if (!successWS.isEmpty()){
-            messagingTemplate.convertAndSend(notifyClientPath, "Completed workstation(s): " + successWS);
+            messagingTemplate.convertAndSend(notifyClientPath, "Completed workstation(s): " + successWS + " (Total: " + successWS.size() + ")");
         }
         if (!failWS.isEmpty()){
-            messagingTemplate.convertAndSend(notifyClientPath, "CRITICAL: Failed workstation(s): " + failWS);
+            messagingTemplate.convertAndSend(notifyClientPath, "CRITICAL: Failed workstation(s): " + failWS + " (Total: " + failWS.size() + ")");
         }
     }
 
     public static Map<String, List<HospWorkstation>> getExistingPackageWSMG(String packageName, ArrayList<String> finalHospDest, String notifyClientPath, SimpMessagingTemplate messagingTemplate){
         ConfigParameters configParameters = ConfigParameters.getInstance();
         Map<String, List<HospWorkstation>> results = new LinkedHashMap<>(finalHospDest.size() * 2);
+        List<String> hospWithNoPackage = new ArrayList<>(finalHospDest.size());
 
         for (String hospCode: finalHospDest){
             String hospDir = configParameters.getHospPackageDirectories().get(hospCode);
@@ -969,43 +1003,47 @@ public class Helper {
             List <HospWorkstation> retrievedWS = new ArrayList<>();
             List <HospWorkstation> retrievedMG = new ArrayList<>();
             try{
-                if (Files.isDirectory(Paths.get(packPath))){
-                    String tasklistPath =  hospDir + configParameters.getIniFolderRelPath() + "\\tasklist.ini";
-                    Wini tasklistFile = new Wini(new File(tasklistPath));
-                    List<String> allKeys = new ArrayList<>(tasklistFile.keySet());
-                    for (String key: allKeys){
-                        if(!key.equals("Tasks") && !key.equals("?")){
-                            String currPackName = tasklistFile.get(key).get("Packages");
-                            if (currPackName.equals(packageName)){
-                                String informMsg = "Found existing \"" + currPackName + "\" in " + hospCode + "'s tasklist.ini";
-                                messagingTemplate.convertAndSend(notifyClientPath, informMsg);
+                boolean noExistingPack = true;
+                String tasklistPath =  hospDir + configParameters.getIniFolderRelPath() + "\\tasklist.ini";
+                Wini tasklistFile = new Wini(new File(tasklistPath));
+                List<String> allKeys = new ArrayList<>(tasklistFile.keySet());
+                for (String key: allKeys){
+                    if(!key.equals("Tasks") && !key.equals("?")){
+                        String currPackName = tasklistFile.get(key).get("Packages");
+                        if (currPackName != null && currPackName.equals(packageName)){
+                            noExistingPack = false;
+                            String informMsg = "Found existing \"" + currPackName + "\" in " + hospCode + "'s tasklist.ini";
+                            messagingTemplate.convertAndSend(notifyClientPath, informMsg);
 
-                                String existingWS = tasklistFile.get(key).get("WorkStations");
-                                String existingMG = tasklistFile.get(key).get("MachineGroups");
+                            String existingWS = tasklistFile.get(key).get("WorkStations");
+                            String existingMG = tasklistFile.get(key).get("MachineGroups");
 
-                                String[] existingWSArray = existingWS.split(",");
-                                String[] existingMGArray = existingMG.split(",");
+                            String[] existingWSArray = existingWS.split(",");
+                            String[] existingMGArray = existingMG.split(",");
 
-                                for (String WS: existingWSArray){
-                                    String modifiedWSString = WS.strip();
-                                    retrievedWS.add(new HospWorkstation(modifiedWSString,modifiedWSString));
-                                }
-
-                                for (String MG: existingMGArray){
-                                    String modifiedMGString = MG.strip();
-                                    retrievedMG.add(new HospWorkstation(modifiedMGString,modifiedMGString));
-                                }
-                                break;
+                            for (String WS: existingWSArray){
+                                String modifiedWSString = WS.strip();
+                                retrievedWS.add(new HospWorkstation(modifiedWSString,modifiedWSString));
                             }
+
+                            for (String MG: existingMGArray){
+                                String modifiedMGString = MG.strip();
+                                retrievedMG.add(new HospWorkstation(modifiedMGString,modifiedMGString));
+                            }
+                            break;
                         }
                     }
                 }
+                if(noExistingPack) hospWithNoPackage.add(hospCode);
                 results.put(hospCode + "_WS", retrievedWS);
                 results.put(hospCode + "_MG", retrievedMG);
             }catch(IOException e){
                 String errorMsg = "CRITICAL: Error reading " + hospCode + "'s tasklist.ini\n" + e;
                 messagingTemplate.convertAndSend(notifyClientPath, errorMsg);
             }
+        }
+        if (!hospWithNoPackage.isEmpty()){
+            messagingTemplate.convertAndSend(notifyClientPath, "WARNING: No \"" + packageName + "\" was found in: " + hospWithNoPackage + ". Make sure the package name is input correctly (case-sensitive) or a package zip file is uploaded.");
         }
         messagingTemplate.convertAndSend(notifyClientPath, "WorkStations and MachineGroups query complete!");
         return results;

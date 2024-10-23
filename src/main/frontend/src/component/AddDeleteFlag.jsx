@@ -9,8 +9,8 @@ function AddDeleteFlag({sessionId}) {
     const [toggleFlagOrNoFlag, setToggleFlagOrNoFlag] = useState('flag')
     const wsPlaceholder = {
         'Hospital': '',
-        'hasFlag_count' : '',
-        'noFlag_count' : '',
+        'hasFlag_count' : 0,
+        'noFlag_count' : 0,
         'hasFlag' : [],
         'noFlag' : []
     }
@@ -23,15 +23,14 @@ function AddDeleteFlag({sessionId}) {
     const [selectedHospAddDelFlag, setSelectedHospAddDelFlag] = useState('')
     const [workStationResp, setWorkStationResp] = useState(wsPlaceholder)
     const [disableInput, setDisableInput] = useState(false)
+    const [addingDeletingFlag, setAddingDeletingFlag] = useState(false)
 
     const [selectedHaveFlagWS, setSelectedHaveFlagWS] = useState([])
     const [selectedNoFlagWS, setSelectedNoFlagWS] = useState([])
-    // const [haveFlagWSValues, setHaveFlagWSValue] = useState([])
-    // const [noFlagWSValues, setNoFlagWSValue] = useState([])
 
     const searchFlagByHosp = (e) =>{
         e.preventDefault()
-
+        setFlagInputForAddDel(flagInputForSearch)
         setDisableInput(true)
         setWorkStationResp(wsPlaceholder)
         setSelectedHaveFlagWS([])
@@ -40,21 +39,15 @@ function AddDeleteFlag({sessionId}) {
         const apiURL = `http://crc2-jasper:8080/api/${sessionId}/search-flag/${selectedHospFlagSearch}/${flagInputForSearch}`
         axios.get(apiURL)
         .then(resp =>{
-            console.log(resp.data)
             setWorkStationResp(resp.data)
             setSelectedHospAddDelFlag(selectedHospFlagSearch)
-            setFlagInputForAddDel(flagInputForSearch)
             setDisableInput(false)
         })
         .catch(err => {
             console.log(err)
+            setDisableInput(false)
         })
     }
-
-    useEffect(()=>{
-        console.log(newFlagToAdd_haveFlag)
-        console.log(newFlagToAdd_noFlag)
-    }, [newFlagToAdd_haveFlag, newFlagToAdd_noFlag])
 
     const handleHaveFlagWS = option =>{
         setSelectedHaveFlagWS(option.map(item => item))
@@ -81,80 +74,117 @@ function AddDeleteFlag({sessionId}) {
     }
 
     const deleteFlagForWsHaveFlag = () =>{
-        const delFlagFormData = new FormData()
-        delFlagFormData.append('flagName', flagInputForAddDel)
-        delFlagFormData.append('hospCode', selectedHospAddDelFlag)
-        delFlagFormData.append('workStations', selectedHaveFlagWS.map(item => item.value))
-        delFlagFormData.append('sessionId', sessionId)
-        
-        const apiDelFlagURL = 'http://crc2-jasper:8080/api/delete-flag'
+        if(confirm(`Confirm to DELETE\n\n"${flagInputForAddDel}"\n\nfor the selected workstation(s)?`)){
+            setAddingDeletingFlag(true)
+            const delFlagFormData = new FormData()
+            delFlagFormData.append('flagName', flagInputForAddDel)
+            delFlagFormData.append('hospCode', selectedHospAddDelFlag)
+            delFlagFormData.append('workStations', selectedHaveFlagWS.map(item => item.value))
+            delFlagFormData.append('sessionId', sessionId)
+            
+            const apiDelFlagURL = 'http://crc2-jasper:8080/api/delete-flag'
 
-        axios.post(apiDelFlagURL, delFlagFormData)
-        .then(resp => {
-            console.log(resp.data)
-            clearSelectedHaveFlagWS()
-        })
-        .catch(err => console.log(err))
-
+            axios.post(apiDelFlagURL, delFlagFormData)
+            .then(resp => {
+                clearSelectedHaveFlagWS()
+                setAddingDeletingFlag(false)
+            })
+            .catch(err => {
+                setAddingDeletingFlag(false)
+                console.log(err)
+            })
+        }
     }
 
     const addNewFlagForWsHaveFlag = () =>{
-        const addNewFlagFormData = new FormData()
-        addNewFlagFormData.append('flagName', newFlagToAdd_haveFlag)
-        addNewFlagFormData.append('hospCode', selectedHospAddDelFlag)
-        addNewFlagFormData.append('workStations', selectedHaveFlagWS.map(item => item.value))
-        addNewFlagFormData.append('sessionId', sessionId)
+        if(confirm(`Confirm to ADD\n\n"${newFlagToAdd_haveFlag}"\n\nfor the selected workstation(s)?`)){
+            setAddingDeletingFlag(true)
+            const addNewFlagFormData = new FormData()
+            addNewFlagFormData.append('flagName', newFlagToAdd_haveFlag)
+            addNewFlagFormData.append('hospCode', selectedHospAddDelFlag)
+            addNewFlagFormData.append('workStations', selectedHaveFlagWS.map(item => item.value))
+            addNewFlagFormData.append('sessionId', sessionId)
 
-        const apiAddFlagURL = 'http://crc2-jasper:8080/api/add-flag'
+            const apiAddFlagURL = 'http://crc2-jasper:8080/api/add-flag'
 
-        axios.post(apiAddFlagURL, addNewFlagFormData)
-        .then(resp => {
-            console.log(resp.data)
-            setNewFlagToAdd_haveFlag('')
-            clearSelectedHaveFlagWS()
-        })
-        .catch(err => console.log(err))
-
+            axios.post(apiAddFlagURL, addNewFlagFormData)
+            .then(resp => {
+                setNewFlagToAdd_haveFlag('')
+                clearSelectedHaveFlagWS()
+                setAddingDeletingFlag(false)
+            })
+            .catch(err => {
+                setAddingDeletingFlag(false)
+                console.log(err)
+            })
+        }
     }
 
     const addFlagForWsNoFlag = () =>{
-        const addNewFlagFormData = new FormData()
-        addNewFlagFormData.append('flagName', flagInputForAddDel)
-        addNewFlagFormData.append('hospCode', selectedHospAddDelFlag)
-        addNewFlagFormData.append('workStations', selectedNoFlagWS.map(item => item.value))
-        addNewFlagFormData.append('sessionId', sessionId)
+        if(confirm(`Confirm to ADD\n\n"${flagInputForAddDel}"\n\nfor the selected workstation(s)?`)){
+            setAddingDeletingFlag(true)
+            const addNewFlagFormData = new FormData()
+            addNewFlagFormData.append('flagName', flagInputForAddDel)
+            addNewFlagFormData.append('hospCode', selectedHospAddDelFlag)
+            addNewFlagFormData.append('workStations', selectedNoFlagWS.map(item => item.value))
+            addNewFlagFormData.append('sessionId', sessionId)
 
-        const apiAddFlagURL = 'http://crc2-jasper:8080/api/add-flag'
+            const apiAddFlagURL = 'http://crc2-jasper:8080/api/add-flag'
 
-        axios.post(apiAddFlagURL, addNewFlagFormData)
-        .then(resp => {
-            console.log(resp.data)
-            clearSelectedNoFlagWS()
-        })
-        .catch(err => console.log(err))
+            axios.post(apiAddFlagURL, addNewFlagFormData)
+            .then(resp => {
+                clearSelectedNoFlagWS()
+                setAddingDeletingFlag(false)
+            })
+            .catch(err => {
+                setAddingDeletingFlag(false)
+                console.log(err)
+            })
+        }
     }
 
     const addNewFlagForWsNoFlag = () =>{
-        const addNewFlagFormData = new FormData()
-        addNewFlagFormData.append('flagName', newFlagToAdd_noFlag)
-        addNewFlagFormData.append('hospCode', selectedHospAddDelFlag)
-        addNewFlagFormData.append('workStations', selectedNoFlagWS.map(item => item.value))
-        addNewFlagFormData.append('sessionId', sessionId)
-        
-        const apiAddFlagURL = 'http://crc2-jasper:8080/api/add-flag'
+        if(confirm(`Confirm to ADD\n\n"${newFlagToAdd_noFlag}"\n\nfor the selected workstation(s)?`)){
+            setAddingDeletingFlag(true)
+            const addNewFlagFormData = new FormData()
+            addNewFlagFormData.append('flagName', newFlagToAdd_noFlag)
+            addNewFlagFormData.append('hospCode', selectedHospAddDelFlag)
+            addNewFlagFormData.append('workStations', selectedNoFlagWS.map(item => item.value))
+            addNewFlagFormData.append('sessionId', sessionId)
+            
+            const apiAddFlagURL = 'http://crc2-jasper:8080/api/add-flag'
 
-        axios.post(apiAddFlagURL, addNewFlagFormData)
-        .then(resp => {
-            console.log(resp.data)
-            setNewFlagToAdd_noFlag('')
-            clearSelectedNoFlagWS()
-        })
-        .catch(err => console.log(err))
+            axios.post(apiAddFlagURL, addNewFlagFormData)
+            .then(resp => {
+                setNewFlagToAdd_noFlag('')
+                clearSelectedNoFlagWS()
+                setAddingDeletingFlag(false)
+            })
+            .catch(err => {
+                setAddingDeletingFlag(false)
+                console.log(err)
+            })
+        }
+    }
+
+    const handleSelectedHospFlagSearch = (e) =>{
+        const selectedHosp = e.target.value
+        if (workStationResp.hasFlag.length > 0 || workStationResp.noFlag.length > 0){
+            if(confirm(`If you change to ${selectedHosp} now,\n\nall the previously searched results for ${selectedHospFlagSearch} will be lost.\n\nConfirm to proceed?`)){
+                setWorkStationResp(wsPlaceholder)
+                setSelectedHospFlagSearch(selectedHosp)
+            }else{
+                e.preventDefault()
+            }
+            return
+        }
+        setSelectedHospFlagSearch(selectedHosp)
     }
 
     return (
         <div className='addDeleteFlag-container'>
-            <h2>Add/ Delete Flags</h2>
+            <h2>Add/ Delete Flags:</h2>
+            <div className='header-display-flag'>{flagInputForAddDel}</div>
             <div className='flag-hosp-container'>
                 <form onSubmit={searchFlagByHosp}>
                     {
@@ -168,10 +198,11 @@ function AddDeleteFlag({sessionId}) {
                                         allHospitals[cluster].map(hospObj => (
                                             <div key={hospObj.index} className='flag-hospital'>
                                                 <label htmlFor={hospObj.hospCode}>
-                                                    <input type='radio' name='hospital' 
+                                                    <input type='radio' 
+                                                    name='hospital' 
                                                     value={hospObj.hospCode} 
                                                     id={hospObj.hospCode}
-                                                    onChange={(e)=>{setSelectedHospFlagSearch(e.target.value)}}/>
+                                                    onClick={handleSelectedHospFlagSearch}/>
                                                     {hospObj.hospCode}
                                                 </label>
                                             </div>)
@@ -192,12 +223,9 @@ function AddDeleteFlag({sessionId}) {
                         required={true}/>
                     </div>
                     <button type="submit" 
-                    disabled={disableInput || flagInputForSearch === '' || selectedHospFlagSearch === ''}>
+                    disabled={disableInput || flagInputForSearch === '' || selectedHospFlagSearch === '' || addingDeletingFlag}>
                     Search
                     </button>
-                    {/* {
-                        disableInput && (<div className='loading-hint'>Loading ... </div>)
-                    } */}
                 </form>
             </div>
 
@@ -213,14 +241,14 @@ function AddDeleteFlag({sessionId}) {
                         <div style={toggleFlagOrNoFlag === 'flag' ? 
                         {color : 'black',
                         fontSize : '1.5rem',
-                        textDecoration : 'underline',} : {} } 
-                        onClick={() => setToggleFlagOrNoFlag('flag')}>Have Flag</div>
+                        } : {} } 
+                        onClick={() => setToggleFlagOrNoFlag('flag')}>{(`Have Flag: ${workStationResp.hasFlag_count}`)}</div>
 
                         <div style={toggleFlagOrNoFlag === 'noFlag' ? 
                         {color : 'black',
                         fontSize : '1.5rem',
-                        textDecoration : 'underline',} : {} }  
-                        onClick={() => setToggleFlagOrNoFlag('noFlag')}>No flag</div>
+                        } : {} }  
+                        onClick={() => setToggleFlagOrNoFlag('noFlag')}>{(`No flag: ${workStationResp.noFlag_count}`)}</div>
                     </div>
                     <div className='have-flag-container' style={toggleFlagOrNoFlag === 'flag' ? {} : {display: 'none'}}>
                         <form>
@@ -272,7 +300,7 @@ function AddDeleteFlag({sessionId}) {
                                 <div 
                                 className='div-button' 
                                 onClick={deleteFlagForWsHaveFlag}
-                                style={selectedHaveFlagWS.length === 0 ? 
+                                style={selectedHaveFlagWS.length === 0 || addingDeletingFlag? 
                                     {pointerEvents: 'none', backgroundColor: 'grey', color: 'lightgray'}: 
                                     {}
                                 }
@@ -287,7 +315,7 @@ function AddDeleteFlag({sessionId}) {
                                 <div 
                                 className='div-button' 
                                 onClick={addNewFlagForWsHaveFlag} 
-                                style={newFlagToAdd_haveFlag === '' || selectedHaveFlagWS.length === 0 ? 
+                                style={newFlagToAdd_haveFlag === '' || selectedHaveFlagWS.length === 0 || addingDeletingFlag? 
                                     {pointerEvents: 'none', backgroundColor: 'grey', color: 'lightgray'}: 
                                     {}
                                 }
@@ -347,7 +375,7 @@ function AddDeleteFlag({sessionId}) {
                                 <div 
                                 className='div-button' 
                                 onClick={addFlagForWsNoFlag}
-                                style={selectedNoFlagWS.length === 0? 
+                                style={selectedNoFlagWS.length === 0 || addingDeletingFlag? 
                                     {pointerEvents: 'none', backgroundColor: 'grey', color: 'lightgray'}: 
                                     {}
                                 }
@@ -362,7 +390,7 @@ function AddDeleteFlag({sessionId}) {
                                 <div 
                                 className='div-button' 
                                 onClick={addNewFlagForWsNoFlag}
-                                style={newFlagToAdd_noFlag === '' || selectedNoFlagWS.length === 0 ? 
+                                style={newFlagToAdd_noFlag === '' || selectedNoFlagWS.length === 0 || addingDeletingFlag? 
                                     {pointerEvents: 'none', backgroundColor: 'grey', color: 'lightgray'}: 
                                     {}
                                 }

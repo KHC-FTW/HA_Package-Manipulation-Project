@@ -22,8 +22,9 @@ const FormComponent = () => {
   
   const [packageFile, setPackageFile] = useState(null)
   const [packageName, setPackageName] = useState("No file chosen")
+  const [inputPackageName, setInputPackageName] = useState('')
   const [alreadyCheckWSMG, setAlreadyCheckWSMG] = useState(false)
-  const [packUpdateStaff, setPackUpdateStaff] = useState('');
+  const [packUpdateStaff, setPackUpdateStaff] = useState('HA Staff')
   const [packDesc, setPackDesc] = useState('')
   const [workStations, setWorkStations] = useState([
     {'hospCode': 'CCH','WS': []},
@@ -77,7 +78,8 @@ const FormComponent = () => {
     {'hospCode': 'SH', 'machineGps' : []},
     {'hospCode': 'TPH', 'machineGps' : []},
   ]);
-  const [disableBtn, setDisableBtn] = useState(true)
+  const [disableRunBtn, setDisableRunBtn] = useState(true)
+  const [disableTasklistBtn, setDisableTasklistBtn] = useState(true)
   const [btnAfterPost, setBtnAfterPost] = useState(false)
   const [runBtn, setRunBtn] = useState('Run')
   const [formDisableBtn, setFormDisableBtn] = useState(true)
@@ -86,9 +88,13 @@ const FormComponent = () => {
   const [stompClient, setStompClient] = useState(null);
   const [messages, setMessages] = useState([]);
   const [handShake, setHandShake] = useState(false);
-  const [firstTimeRunning, setFirstTimeRunning] = useState(true)
-
   const [packDescAction, setPackDescAction] = useState('nothing')
+
+  const scrollToBottom = useRef(null)
+
+  useEffect(()=>{
+    if(scrollToBottom.current) scrollToBottom.current.scrollTop = scrollToBottom.current.scrollHeight 
+  }, [messages])
 
   useEffect(()=>{
     setAlreadyCheckWSMG(false)
@@ -141,8 +147,10 @@ const FormComponent = () => {
   const handleFileUpload = (e)=>{
     setAlreadyCheckWSMG(false)
     let fileName = e.target.value.toLowerCase()
+    workStations.forEach(item => item.WS = [])
+    machineGroups.forEach(item => item.machineGps = [])
     if (!fileName.endsWith("zip") || fileName == null){
-      alert("Please upload .zip files only.")
+      alert("Please upload .zip files only\n\nOR\n\nManually enter a package name for checking.")
       e.target.value = ''
       setPackageFile(null)
       setPackageName("No file chosen")
@@ -153,7 +161,22 @@ const FormComponent = () => {
       fileName = e.target.files[0].name
       setPackageName(fileName)
       setPackDesc(fileName.substr(0, fileName.lastIndexOf('.')))
+      setInputPackageName('')
     }
+  }
+
+  const handleInputPackageName = (e) =>{
+    if (packageFile){
+      e.preventDefault()
+      alert(`${packageFile.name} was found, which has higher precedence for checking.\n\nTo check manually input package name, you must first remove the uploaded zip file.\n\nHint: Click the file again, click cancel and confirm ok if prompted.`)
+      return
+    } 
+    setAlreadyCheckWSMG(false)
+    const value = e.target.value;
+    setInputPackageName(value)
+    setPackDesc(value)
+    workStations.forEach(item => item.WS = [])
+    machineGroups.forEach(item => item.machineGps = [])
   }
 
   const handlePackUpdateStaff = (e) => {
@@ -243,33 +266,29 @@ const FormComponent = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    // if(firstTimeRunning){
-    //   setFirstTimeRunning(false)
-    // }else{
-    //   setMessages([])
-    // }
-
-    // setMessages([])
-
-    setBtnAfterPost(true)
-    setRunBtn('Running, please wait...')
     
-    // Prepare the data to be sent to the backend
-    const formData = prepareFinalFormData()
+    if (confirm('Confirm to run?')){
+      setBtnAfterPost(true)
+      setRunBtn('Running, please wait...')
+      // Prepare the data to be sent to the backend
+      const formData = prepareFinalFormData()
 
     // Send the form data to the backend
-    fetch('http://crc2-jasper:8080/api/submitForm', {
-      method: 'POST',
-      body: formData,
-    })
+
+      let targetAPI = packageFile ? 'http://crc2-jasper:8080/api/submitForm' : 'http://crc2-jasper:8080/api/submitForm-no-zip'
+
+      fetch(targetAPI, {
+        method: 'POST',
+        body: formData,
+      })
       .then((response) => response.json())
       .then((data) => {
-        console.log(data); // Print the response data received from the backend
-        let rcvMsg = JSON.parse(JSON.stringify(data))
+        // console.log(data); // Print the response data received from the backend
+        let rcvMsg = data
         // alert(rcvMsg.response)
         setBtnAfterPost(false)
         setRunBtn('Run')
+        setAlreadyCheckWSMG(false)
       })
       .catch((error) => {
         console.error('Error:', error);
@@ -278,8 +297,9 @@ const FormComponent = () => {
         console.log(errorMsg1 + "\n\n" + errorMsg2)
         setBtnAfterPost(false)
         setRunBtn('Run')
+        setAlreadyCheckWSMG(false)
       });
-    
+    }
   };
 
   const prepareFinalFormData = () =>{
@@ -304,7 +324,11 @@ const FormComponent = () => {
       return finalMachineGps
     }, [])
     const formData = new FormData();
-    formData.append('packageFile', packageFile)
+    if(packageFile){
+      formData.append('packageFile', packageFile)
+    }else{
+      formData.append('packageName', inputPackageName)
+    }
     formData.append('finalHospDest', finalHospDest)
     formData.append('packDesc', packDesc)
     formData.append('packDescAction', packDescAction)
@@ -318,67 +342,61 @@ const FormComponent = () => {
 
 
   useEffect(()=>{
-    if(!packageFile || finalHospDest.length === 0 || !packDesc || !packUpdateStaff || btnAfterPost || !alreadyCheckWSMG){
-      setDisableBtn(true)
+    if((!packageFile && !inputPackageName) || finalHospDest.length === 0 || !packDesc || !packUpdateStaff || btnAfterPost || !alreadyCheckWSMG){
+      setDisableRunBtn(true)
     }else{
-      setDisableBtn(false)
+      setDisableRunBtn(false)
     }
   }, [packageFile, finalHospDest, packDesc, packUpdateStaff, stompClient, btnAfterPost, alreadyCheckWSMG])
 
   useEffect(()=>{
-    if (packageFile){
+    if (packageFile || inputPackageName){
       setFormDisableBtn(false)
     }else{
       setFormDisableBtn(true)
     }
-  }, [packageFile])
-
-  const AlwaysScrollToBottom = () => {
-    const elementRef = useRef();
-    useEffect(() => elementRef.current.scrollIntoView());
-    return <div ref={elementRef} />;
-  }
+  }, [packageFile, inputPackageName])
 
   const clearServerStatus = () =>{
     setMessages([])
   }
 
   const queryExistingWSMG = () =>{
+    const queryFormData = new FormData()
 
-    if (packageName !== 'No file chosen' && finalHospDest.length > 0){
+    if (packageName !== 'No file chosen'){
       const fileName = packageFile.name
-      const queryFormData = new FormData()
       queryFormData.append('packageName', fileName.substr(0, fileName.lastIndexOf('.')))
-      queryFormData.append('finalHospDest', finalHospDest)
-      queryFormData.append('sessionId', sessionId)
-      
-      const apiQueryURL = "http://crc2-jasper:8080/api/get-WS-MG"
-      axios.post(apiQueryURL, queryFormData)
-      .then(resp => {
-        finalHospDest.forEach(hospName =>{
-          console.log(hospName)
-          setWorkStations(workStations.map(item =>{
-            if (item.hospCode === hospName){
-              const target = `${hospName}_WS`
-              console.log(target)
-              item.WS = resp.data[target]
-              console.log(item.WS)
-            }
-            return item
-          }))
-          setMachineGroups(machineGroups.map(item =>{
-            if (item.hospCode === hospName){
-              const target = `${hospName}_MG`
-              item.machineGps = resp.data[target]
-            }
-            return item
-          }))
-          setAlreadyCheckWSMG(true)
-        })
+    }else if (inputPackageName !== ''){
+      queryFormData.append('packageName', inputPackageName)
+    }
 
+    queryFormData.append('finalHospDest', finalHospDest)
+    queryFormData.append('sessionId', sessionId)
+    
+    const apiQueryURL = "http://crc2-jasper:8080/api/get-WS-MG"
+    axios.post(apiQueryURL, queryFormData)
+    .then(resp => {
+      finalHospDest.forEach(hospName =>{
+        setWorkStations(workStations.map(item =>{
+          if (item.hospCode === hospName){
+            const target = `${hospName}_WS`
+            item.WS = resp.data[target]
+          }
+          return item
+        }))
+        setMachineGroups(machineGroups.map(item =>{
+          if (item.hospCode === hospName){
+            const target = `${hospName}_MG`
+            item.machineGps = resp.data[target]
+          }
+          return item
+        }))
+        setAlreadyCheckWSMG(true)
       })
-      .catch(err => console.log(err))
-      }
+    })
+    .catch(err => console.log(err))
+      
   }
 
   return (
@@ -405,9 +423,20 @@ const FormComponent = () => {
               </span>
               <input type='file' accept='.zip' onChange={handleFileUpload} style={{display: 'none'}}/>
             </label>
+            <div style={{marginLeft: '10px', display: 'flex', alignItems: 'center', fontWeight: 'bold'}}>OR</div>
+
+            <input className='packageName-input' 
+                    type='text' 
+                    placeholder='Enter Package Name' 
+                    value={inputPackageName} 
+                    spellCheck={false}
+                    onChange={handleInputPackageName}
+                    style={inputPackageName !== '' ? {border: '1px solid black', backgroundColor: 'rgb(184, 207, 255, 0.4)',}:{}}/>
+
+
             <div className='check-pack-btn' 
                 onClick={queryExistingWSMG}
-                style={packageName === 'No file chosen' || finalHospDest.length === 0 ? {background: 'gray', pointerEvents: 'none'}: {}}
+                style={(packageName === 'No file chosen' && inputPackageName === '') || finalHospDest.length === 0 ? {background: 'gray', pointerEvents: 'none'}: {}}
                 >
               Check
             </div>
@@ -440,7 +469,7 @@ const FormComponent = () => {
                 value={packUpdateStaff} 
                 onChange={handlePackUpdateStaff} 
                 disabled={formDisableBtn}
-                required={true}
+                required={false}
                 spellCheck={false}
                 />
                 <label htmlFor="packUpdateStaff">Package Update Staff</label>
@@ -594,7 +623,7 @@ const FormComponent = () => {
             </fieldset>
           </div>
           <br/>
-          <button type="submit" disabled={disableBtn}>{runBtn}</button>
+          <button type="submit" disabled={disableRunBtn}>{runBtn}</button>
         </form>
       </div>
 
@@ -612,7 +641,7 @@ const FormComponent = () => {
               {}
             }>Clear</div>
           </div>
-          <div className="messages">
+          <div className="messages" ref={scrollToBottom}>
             {/* <div>Awaiting messages ...</div> */}
             {messages.map((msg, index) => 
               (
@@ -622,7 +651,7 @@ const FormComponent = () => {
                 </div>
               )
             )}
-            {/* <AlwaysScrollToBottom/> */}
+            <div ref={scrollToBottom}></div>
           </div>
         </div>
       </div>

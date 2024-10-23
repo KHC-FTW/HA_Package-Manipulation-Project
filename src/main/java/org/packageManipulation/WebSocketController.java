@@ -70,6 +70,46 @@ public class WebSocketController {
     }
 
     @ResponseBody
+    @PostMapping(path = "/submitForm-no-zip")
+    public Map<String, String> receivePackageNoZip(@RequestParam("packageName") String packageName,
+                                              @RequestParam("finalHospDest") ArrayList<String> finalHospDest,
+                                              @RequestParam("packDesc") String packDesc,
+                                              @RequestParam("packDescAction") String packDescAction,
+                                              @RequestParam("packUpdateStaff")String packUpdateStaff,
+                                              @RequestParam("workStations") String workStations,
+                                              @RequestParam("machineGroups") String machineGroups,
+                                              @RequestParam("sessionId") String sessionId) {
+
+
+        ConfigParameters configParameters = ConfigParameters.getInstance();
+
+        String notifyClientPath = "/queue/afterFormSubmit/" + sessionId;
+
+        String alertErrorMsg = "Error processing submitted package data. Operation aborted.";
+
+        try{
+            PackageMetadata packageMetadata = new PackageMetadata(
+                    packageName,
+                    finalHospDest,
+                    packDesc,
+                    packDescAction,
+                    packUpdateStaff,
+                    Helper.customJSONObjToJavaMap(workStations),
+                    Helper.customJSONObjToJavaMap(machineGroups),
+                    notifyClientPath,
+                    messagingTemplate);
+
+            Helper.startOperationNoZip(packageMetadata, configParameters);
+            return Collections.singletonMap("response", "All backend operations completed.");
+
+        }catch(IOException e){
+            messagingTemplate.convertAndSend(notifyClientPath, e.toString());
+            messagingTemplate.convertAndSend(notifyClientPath, alertErrorMsg);
+            return Collections.singletonMap("response", e.toString() + "\n\n" + alertErrorMsg);
+        }
+    }
+
+    @ResponseBody
     @PostMapping(path = "/delete-flag")
     public Map<String, String> deleteFlag(@RequestParam("flagName") String flagName,
                           @RequestParam("hospCode") String hospCode,

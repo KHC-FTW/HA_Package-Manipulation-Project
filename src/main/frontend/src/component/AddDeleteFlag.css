@@ -11,6 +11,22 @@
     margin: 0 auto 15px auto;
 }
 
+.addDeleteFlag-container h2, .header-display-flag{
+    display: inline-block;
+    margin-right: 10px;
+}
+
+.header-display-flag{
+    color: red;
+    font-weight: bold;
+    font-size: 1.5rem;
+    width: 72%;
+    overflow: hidden;
+    overflow-wrap:normal;
+    vertical-align: middle;
+    padding-bottom: 8px;
+}
+
 .flag-cluster{
     display: flex;
     flex-wrap: wrap;
@@ -54,7 +70,7 @@
 
 .toggle-add-delete-container div{
     border: 1px solid #ccc;
-    min-width: 10rem;
+    min-width: 15rem;
     text-align: center;
     font-size: 1.3rem;
     font-weight: bolder;

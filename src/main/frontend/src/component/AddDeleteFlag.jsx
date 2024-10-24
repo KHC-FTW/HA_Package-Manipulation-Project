@@ -173,6 +173,8 @@ function AddDeleteFlag({sessionId}) {
             if(confirm(`If you change to ${selectedHosp} now,\n\nall the previously searched results for ${selectedHospFlagSearch} will be lost.\n\nConfirm to proceed?`)){
                 setWorkStationResp(wsPlaceholder)
                 setSelectedHospFlagSearch(selectedHosp)
+                clearSelectedHaveFlagWS()
+                clearSelectedNoFlagWS()
             }else{
                 e.preventDefault()
             }
@@ -186,7 +188,7 @@ function AddDeleteFlag({sessionId}) {
             <h2>Add/ Delete Flags:</h2>
             <div className='header-display-flag'>{flagInputForAddDel}</div>
             <div className='flag-hosp-container'>
-                <form onSubmit={searchFlagByHosp}>
+                <form onSubmit={searchFlagByHosp} autoComplete='on'>
                     {
                         Object.keys(allHospitals).map(cluster =>(
                             <div className={`flag-cluster ${cluster}`}
@@ -220,10 +222,17 @@ function AddDeleteFlag({sessionId}) {
                         onChange={(e)=>setFlagInputForSearch(e.target.value)}
                         disabled={disableInput}
                         minLength={1}
+                        name='flagName'
+                        autoComplete='on'
+                        spellCheck={false}
                         required={true}/>
                     </div>
                     <button type="submit" 
-                    disabled={disableInput || flagInputForSearch === '' || selectedHospFlagSearch === '' || addingDeletingFlag}>
+                    disabled={disableInput 
+                    || flagInputForSearch === '' 
+                    || selectedHospFlagSearch === '' 
+                    || addingDeletingFlag
+                    || sessionId === ''}>
                     Search
                     </button>
                 </form>

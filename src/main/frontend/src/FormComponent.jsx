@@ -79,7 +79,6 @@ const FormComponent = () => {
     {'hospCode': 'TPH', 'machineGps' : []},
   ]);
   const [disableRunBtn, setDisableRunBtn] = useState(true)
-  const [disableTasklistBtn, setDisableTasklistBtn] = useState(true)
   const [btnAfterPost, setBtnAfterPost] = useState(false)
   const [runBtn, setRunBtn] = useState('Run')
   const [formDisableBtn, setFormDisableBtn] = useState(true)
@@ -403,9 +402,10 @@ const FormComponent = () => {
     <div className='form-component'>
 
       <div className="form-container">
-        <h1 style={{margin: '15px 0 0 0'}}>Workstation Package Distribution</h1>
+        <h1 style={{margin: '15px 0 0 0'}}>Workstation Package Distribution 
+          {!sessionId && <span style={{color: 'red', marginLeft: '20px'}}>(Server not connected !!!)</span>}</h1>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} autoComplete='on'>
           <div className="form-group checkbox-group">
             <p>Copy Package To The Following Cluster(s)/ Hospital(s):</p>
             <HKECHosp HKECDestHosp={HKECDestHosp} setHKECDestHosp={setHKECDestHosp}/>
@@ -426,17 +426,22 @@ const FormComponent = () => {
             <div style={{marginLeft: '10px', display: 'flex', alignItems: 'center', fontWeight: 'bold'}}>OR</div>
 
             <input className='packageName-input' 
-                    type='text' 
-                    placeholder='Enter Package Name' 
-                    value={inputPackageName} 
-                    spellCheck={false}
-                    onChange={handleInputPackageName}
-                    style={inputPackageName !== '' ? {border: '1px solid black', backgroundColor: 'rgb(184, 207, 255, 0.4)',}:{}}/>
+              id='manual-package-input'
+              type='text' 
+              placeholder='Enter Package Name' 
+              value={inputPackageName} 
+              name='packageName'
+              autoComplete='on'
+              spellCheck={false}
+              onChange={handleInputPackageName}
+              style={inputPackageName !== '' ? {border: '1px solid black', backgroundColor: 'rgb(184, 207, 255, 0.4)',}:{}}/>
 
 
             <div className='check-pack-btn' 
                 onClick={queryExistingWSMG}
-                style={(packageName === 'No file chosen' && inputPackageName === '') || finalHospDest.length === 0 ? {background: 'gray', pointerEvents: 'none'}: {}}
+                style={(packageName === 'No file chosen' && inputPackageName === '') 
+                  || finalHospDest.length === 0 
+                  || sessionId === '' ? {background: 'gray', pointerEvents: 'none'}: {}}
                 >
               Check
             </div>

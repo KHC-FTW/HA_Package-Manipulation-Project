@@ -3,6 +3,7 @@ import { allHospitals } from '../parameters/allHospitals'
 import './AddDeleteFlag.css'
 import Select from 'react-select';
 import axios from 'axios';
+import { hostMachineConfig } from '../parameters/hostMachineConfig';
 
 function AddDeleteFlag({sessionId}) {
 
@@ -36,7 +37,7 @@ function AddDeleteFlag({sessionId}) {
         setSelectedHaveFlagWS([])
         setSelectedNoFlagWS([])
 
-        const apiURL = `http://crc2-jasper:8080/api/${sessionId}/search-flag/${selectedHospFlagSearch}/${flagInputForSearch}`
+        const apiURL = `${hostMachineConfig.hostURL}/api/${sessionId}/search-flag/${selectedHospFlagSearch}/${flagInputForSearch}`
         axios.get(apiURL)
         .then(resp =>{
             setWorkStationResp(resp.data)
@@ -82,7 +83,7 @@ function AddDeleteFlag({sessionId}) {
             delFlagFormData.append('workStations', selectedHaveFlagWS.map(item => item.value))
             delFlagFormData.append('sessionId', sessionId)
             
-            const apiDelFlagURL = 'http://crc2-jasper:8080/api/delete-flag'
+            const apiDelFlagURL = `${hostMachineConfig.hostURL}/api/delete-flag`
 
             axios.post(apiDelFlagURL, delFlagFormData)
             .then(resp => {
@@ -105,7 +106,7 @@ function AddDeleteFlag({sessionId}) {
             addNewFlagFormData.append('workStations', selectedHaveFlagWS.map(item => item.value))
             addNewFlagFormData.append('sessionId', sessionId)
 
-            const apiAddFlagURL = 'http://crc2-jasper:8080/api/add-flag'
+            const apiAddFlagURL = `${hostMachineConfig.hostURL}/api/add-flag`
 
             axios.post(apiAddFlagURL, addNewFlagFormData)
             .then(resp => {
@@ -129,7 +130,7 @@ function AddDeleteFlag({sessionId}) {
             addNewFlagFormData.append('workStations', selectedNoFlagWS.map(item => item.value))
             addNewFlagFormData.append('sessionId', sessionId)
 
-            const apiAddFlagURL = 'http://crc2-jasper:8080/api/add-flag'
+            const apiAddFlagURL = `${hostMachineConfig.hostURL}/api/add-flag`
 
             axios.post(apiAddFlagURL, addNewFlagFormData)
             .then(resp => {
@@ -152,7 +153,7 @@ function AddDeleteFlag({sessionId}) {
             addNewFlagFormData.append('workStations', selectedNoFlagWS.map(item => item.value))
             addNewFlagFormData.append('sessionId', sessionId)
             
-            const apiAddFlagURL = 'http://crc2-jasper:8080/api/add-flag'
+            const apiAddFlagURL = `${hostMachineConfig.hostURL}/api/add-flag`
 
             axios.post(apiAddFlagURL, addNewFlagFormData)
             .then(resp => {

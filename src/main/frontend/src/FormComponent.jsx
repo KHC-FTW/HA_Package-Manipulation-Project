@@ -7,10 +7,11 @@ import HKWCHosp from './HKWCHosp'
 import NTECHosp from './NTECHosp'
 import HKECHosp from './HKECHosp'
 import CreatableSelect from 'react-select/creatable'
-import {machineGpByHosp} from './parameters/machineGpByHosp'
+import { machineGpByHosp } from './parameters/machineGpByHosp'
 import { workstationByHosp } from './parameters/workstationByHosp'
 import AddDeleteFlag from './component/AddDeleteFlag'
 import axios from 'axios';
+import { hostMachineConfig } from './parameters/hostMachineConfig';
 
 const FormComponent = () => {
 
@@ -101,7 +102,7 @@ const FormComponent = () => {
   }, [HKECDestHosp, KWCDestHosp, HKWCDestHosp, NTECDestHosp])
 
   const establishHandshake = ()=>{
-    const socket = new SockJS('http://crc2-jasper:8080/ws');
+    const socket = new SockJS(`${hostMachineConfig.hostURL}/ws`);
     const client = new Client({
       webSocketFactory: () => socket,
       debug: (str) => console.log(str),
@@ -274,7 +275,7 @@ const FormComponent = () => {
 
     // Send the form data to the backend
 
-      let targetAPI = packageFile ? 'http://crc2-jasper:8080/api/submitForm' : 'http://crc2-jasper:8080/api/submitForm-no-zip'
+      let targetAPI = packageFile ? `${hostMachineConfig.hostURL}/api/submitForm` : `${hostMachineConfig.hostURL}/api/submitForm-no-zip`
 
       fetch(targetAPI, {
         method: 'POST',
@@ -373,7 +374,7 @@ const FormComponent = () => {
     queryFormData.append('finalHospDest', finalHospDest)
     queryFormData.append('sessionId', sessionId)
     
-    const apiQueryURL = "http://crc2-jasper:8080/api/get-WS-MG"
+    const apiQueryURL = `${hostMachineConfig.hostURL}/api/get-WS-MG`
     axios.post(apiQueryURL, queryFormData)
     .then(resp => {
       finalHospDest.forEach(hospName =>{
